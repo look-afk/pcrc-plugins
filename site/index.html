@@ -2,100 +2,301 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Плагины PCRC</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&display=swap">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0d1117">
+<meta name="description" content="Каталог расширений PCRC: описание, команды, контрольные суммы и установка плагинов.">
+<title>PCRC Plugins — каталог расширений</title>
 <style>
-:root{--bg:#edf0f3;--card:#fff;--ink:#16212b;--mute:#5b6875;--line:#cbd3db;--acc:#1f4fe0;--accink:#fff;--warn:#fbefd5;--warnink:#7a4a00;--code:#e4e9ee}
-@media (prefers-color-scheme:dark){:root{--bg:#12171c;--card:#1b222a;--ink:#e6ebf0;--mute:#93a0ad;--line:#2c3640;--acc:#7fa2ff;--accink:#0d1420;--warn:#3a2e12;--warnink:#f0c674;--code:#10151a}}
+:root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--panel2:#11161d;--line:#30363d;--text:#e6edf3;--muted:#8b949e;--purple:#a78bfa;--purple2:#c4b5fd;--purplebg:#21183b;--green:#3fb950;--amber:#e3b341;--red:#f85149;--radius:16px}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Onest,system-ui,sans-serif}
-main{max-width:860px;margin:0 auto;padding:48px 20px 80px}
-h1{font-size:2.4rem;line-height:1.1;margin:0 0 8px;letter-spacing:-.02em}
-.lead{color:var(--mute);margin:0 0 28px;max-width:60ch}
-.bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
-input{flex:1 1 240px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
-a.btn,button{font:inherit;cursor:pointer;border-radius:8px;padding:12px 16px;border:1px solid var(--acc);background:var(--acc);color:var(--accink);text-decoration:none;font-weight:500}
-button.ghost{background:transparent;color:var(--acc);padding:8px 12px}
-:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:12px}
-.head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
-.item h2{margin:0;font-size:1.25rem}
-.meta{color:var(--mute);font-size:.875rem}
-.item p{margin:8px 0 12px}
-.cmds{margin:0 0 12px;padding:0;list-style:none;font-size:.9rem;color:var(--mute)}
-.cmds code,.cmd{font-family:ui-monospace,Consolas,monospace}
-.cmds code{color:var(--ink)}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.chip{background:var(--warn);color:var(--warnink);border-radius:999px;padding:2px 10px;font-size:.8rem}
-.chip.ok{background:var(--code);color:var(--mute)}
-.cmd{display:block;background:var(--code);padding:10px 12px;border-radius:8px;font-size:.8rem;overflow-x:auto;white-space:nowrap;user-select:all}
-.row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
-.row a{color:var(--acc)}
-.empty{padding:40px 0;text-align:center;color:var(--mute)}
-footer{margin-top:32px;color:var(--mute);font-size:.875rem}
-@media (prefers-reduced-motion:no-preference){button{transition:background .15s}}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -220px,#2b1e4a 0,transparent 58%),var(--bg);color:var(--text);font:15px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--purple2);text-decoration:none}a:hover{text-decoration:underline}
+button,input,select{font:inherit}
+button,a,input,select{-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--purple);outline-offset:3px}
+.wrap{width:min(1120px,100%);margin:auto;padding:24px 22px 64px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:5px 0 24px;border-bottom:1px solid rgba(139,148,158,.18)}
+.brand{display:inline-flex;align-items:center;gap:11px;color:var(--text);font-weight:800;letter-spacing:.09em;font-size:13px}
+.logo{width:36px;height:36px;display:grid;place-items:center;border:1px solid #5c478b;border-radius:11px;background:linear-gradient(145deg,#342454,#171326);color:var(--purple2);font-size:18px;box-shadow:0 0 28px #a78bfa12}
+.nav{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;justify-content:center;align-items:center;gap:8px;padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;transition:border-color .15s,transform .15s,background .15s}
+.btn:hover{border-color:#6e5aa0;text-decoration:none;transform:translateY(-1px)}
+.btn.primary{background:var(--purple);border-color:var(--purple);color:#170f25}
+.btn.ghost{background:transparent;color:var(--purple2);border-color:#51416f}
+.hero{padding:52px 0 28px;max-width:800px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--purple2);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px #3fb95070}
+h1{font-size:clamp(34px,6vw,58px);letter-spacing:-.055em;line-height:1.05;margin:17px 0 17px}
+h1 span{color:var(--purple2)}
+.lead{max-width:690px;margin:0;color:#aab4c0;font-size:clamp(15px,2vw,18px)}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:22px 0 30px}
+.stat{border:1px solid var(--line);border-radius:14px;padding:15px 17px;background:linear-gradient(135deg,#161b22eF,#11161deF)}
+.stat strong{display:block;font-size:25px;line-height:1.2;letter-spacing:-.04em}
+.stat span{display:block;color:var(--muted);font-size:12px;margin-top:5px}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin:34px 0 14px}
+.section-head h2{margin:0;font-size:21px;letter-spacing:-.025em}
+.section-head p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.toolbar{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:10px;margin-bottom:16px}
+.searchbox{position:relative}
+.searchbox svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted);pointer-events:none}
+input,select{width:100%;min-width:0;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:12px 14px;outline:none}
+input{padding-left:42px}
+input:focus,select:focus{border-color:var(--purple)}
+.results{color:var(--muted);font-size:12px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.plugin{min-width:0;background:linear-gradient(145deg,rgba(22,27,34,.98),rgba(17,22,29,.98));border:1px solid var(--line);border-radius:var(--radius);padding:19px;transition:border-color .18s,transform .18s,box-shadow .18s}
+.plugin:hover{border-color:#67528f;transform:translateY(-2px);box-shadow:0 14px 40px #00000020}
+.plugin-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.plugin-title{min-width:0}
+.plugin h3{font-size:19px;line-height:1.25;margin:0;overflow-wrap:anywhere}
+.version{display:inline-block;margin-top:7px;color:var(--muted);font-size:11px}
+.pill{display:inline-flex;align-items:center;gap:6px;max-width:100%;border:1px solid #4d3b70;background:#211831;color:var(--purple2);border-radius:999px;padding:4px 9px;font-size:11px;white-space:normal}
+.pill.safe{border-color:#285a3a;background:#12271a;color:#7ee787}
+.pill.warn{border-color:#5a4825;background:#2a2112;color:#eac875}
+.description{color:#b2bdc9;font-size:13px;margin:15px 0 13px;overflow-wrap:anywhere}
+.meta-row{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-bottom:14px}
+.meta-row span{border:1px solid #29313a;border-radius:7px;padding:3px 7px}
+.commands{border-top:1px solid #29313a;padding-top:12px}
+.commands-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:11px;margin-bottom:7px}
+.command-list{display:grid;gap:6px}
+.command{display:flex;align-items:flex-start;gap:9px;font-size:12px;min-width:0}
+.command code{color:var(--purple2);overflow-wrap:anywhere;flex:0 0 auto;max-width:55%;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}
+.command span{color:var(--muted);overflow-wrap:anywhere}
+.more-commands{margin-top:8px;padding:0;border:0;background:none;color:var(--purple2);font-size:12px;cursor:pointer}
+.capabilities{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px}
+.install{margin-top:15px;padding-top:14px;border-top:1px solid #29313a}
+.install-label{font-size:11px;color:var(--muted);margin-bottom:7px}
+.install-command{display:block;width:100%;padding:10px 11px;border:1px solid #33294a;background:#100e18;border-radius:9px;color:#d8ccff;font:11px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;user-select:all}
+.card-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.card-actions .btn{padding:7px 10px;font-size:12px}
+.hash{font:10px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);margin-left:auto}
+.state{padding:42px 20px;text-align:center;background:var(--panel2);border:1px dashed #3a414a;border-radius:14px;color:var(--muted);grid-column:1/-1}
+.state strong{display:block;color:var(--text);font-size:16px;margin-bottom:5px}
+.state button{margin-top:14px}
+.notice{display:grid;grid-template-columns:auto 1fr;gap:13px;margin-top:24px;padding:17px;border:1px solid #4c3b70;background:linear-gradient(110deg,#211831,#171521);border-radius:14px}
+.notice-icon{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#3a2b55;color:var(--purple2);font-weight:800}
+.notice strong{display:block;font-size:13px;margin-bottom:3px}
+.notice p{margin:0;color:#b9aecf;font-size:12px}
+footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:35px;padding-top:18px;border-top:1px solid rgba(139,148,158,.18);color:var(--muted);font-size:12px}
+footer .foot-brand{color:var(--purple2);font-weight:800;letter-spacing:.08em}
+[hidden]{display:none!important}
+@media(max-width:720px){.wrap{padding:17px 15px 44px}.hero{padding-top:38px}.grid{grid-template-columns:1fr}.stats{gap:8px}.stat{padding:12px}.stat strong{font-size:22px}.toolbar{grid-template-columns:1fr}.plugin{padding:16px}.hash{margin-left:0;width:100%}}
+@media(max-width:420px){.stats{grid-template-columns:1fr}.stat{display:flex;align-items:center;justify-content:space-between;gap:10px}.stat span{margin:0;text-align:right}.nav{width:100%}.nav .btn{flex:1}.hero-actions .btn{flex:1}.plugin-top{gap:8px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
 <body>
-<main>
-  <h1>Плагины PCRC</h1>
-  <p class="lead">Каталог плагинов для клиента PCRC. Скопируйте команду установки и отправьте её своему боту. Клиент сам проверит контрольную сумму.</p>
-  <div class="bar">
-    <input id="q" type="search" placeholder="Поиск по названию, описанию, команде" aria-label="Поиск плагинов">
-    <a class="btn" id="add" href="https://github.com/look-afk/pcrc-plugins/new/main/plugins" target="_blank" rel="noopener">Добавить плагин</a>
-  </div>
-  <div id="list" aria-live="polite"></div>
-  <footer>Плагин — это код, который выполняется на вашем компьютере. Устанавливайте только то, что прочитали или чему доверяете. <span id="gen"></span></footer>
+<main class="wrap">
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="PCRC Plugins — главная"><span class="logo">P</span><span>PCRC <span style="color:var(--purple2)">/ PLUGINS</span></span></a>
+    <nav class="nav" aria-label="Основная навигация">
+      <a class="btn" href="https://github.com/look-afk/pcrc-plugins" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      <a class="btn primary" href="https://github.com/look-afk/pcrc-plugins/new/main/plugins" target="_blank" rel="noopener noreferrer">＋ Предложить плагин</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow"><span class="dot"></span> Расширения для PCRC</div>
+    <h1>Твой клиент.<br><span>Твои возможности.</span></h1>
+    <p class="lead">Каталог плагинов PCRC в одном месте. Изучай команды и возможности, проверяй контрольную сумму и копируй готовую команду установки.</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="#catalog">Исследовать каталог <span aria-hidden="true">↓</span></a>
+      <a class="btn" href="https://github.com/look-afk/pcrc-client" target="_blank" rel="noopener noreferrer">Репозиторий клиента ↗</a>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="Статистика каталога">
+    <div class="stat"><strong id="stat-plugins">—</strong><span>плагинов в каталоге</span></div>
+    <div class="stat"><strong id="stat-commands">—</strong><span>доступных команд</span></div>
+    <div class="stat"><strong id="stat-size">—</strong><span>общий размер файлов</span></div>
+  </section>
+
+  <section id="catalog">
+    <div class="section-head">
+      <div><h2>Каталог расширений</h2><p>Ищи по названию, автору, описанию или команде.</p></div>
+      <span class="pill" id="catalog-status">Загрузка каталога…</span>
+    </div>
+    <div class="toolbar">
+      <label class="searchbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+        <input id="q" type="search" placeholder="Например: screenshot, voice, author…" aria-label="Поиск плагинов" autocomplete="off">
+      </label>
+      <select id="sort" aria-label="Сортировка каталога">
+        <option value="name">По названию</option>
+        <option value="commands">По числу команд</option>
+        <option value="size">По размеру файла</option>
+      </select>
+    </div>
+    <p class="results" id="results-count" aria-live="polite"></p>
+    <div class="grid" id="list" aria-live="polite"><div class="state"><strong>Загружаем каталог</strong>Получаем список доступных расширений…</div></div>
+  </section>
+
+  <aside class="notice">
+    <div class="notice-icon" aria-hidden="true">!</div>
+    <div><strong>Проверяй код перед установкой</strong><p>Плагин — это Python-код, который выполняется на компьютере. SHA-256 помогает проверить целостность файла, но не доказывает его безопасность. Устанавливай только код, который ты прочитал и которому доверяешь.</p></div>
+  </aside>
+
+  <footer>
+    <span><span class="foot-brand">PCRC / PLUGINS</span> · Каталог расширений сообщества</span>
+    <span id="updated">Статус: ожидание данных</span>
+  </footer>
 </main>
 <script>
-const list = document.getElementById('list'), q = document.getElementById('q');
+const list = document.getElementById('list');
+const query = document.getElementById('q');
+const sort = document.getElementById('sort');
+const status = document.getElementById('catalog-status');
+const resultsCount = document.getElementById('results-count');
 let plugins = [];
 
-function h(tag, props, ...kids) {
-  const el = document.createElement(tag);               // всё через textContent: описания пишут посторонние люди
-  for (const [k, v] of Object.entries(props || {})) k === 'class' ? el.className = v : el.setAttribute(k, v);
-  for (const kid of kids) el.append(kid);
-  return el;
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (key === 'class') node.className = value;
+    else if (key === 'text') node.textContent = value;
+    else node.setAttribute(key, value);
+  }
+  for (const child of children) {
+    if (child instanceof Node) node.append(child);
+    else if (child !== null && child !== undefined) node.append(document.createTextNode(String(child)));
+  }
+  return node;
 }
-
-function card(p) {
-  const url = new URL(p.file, location.href).href;
-  const cmd = `plugin_install ${url} ${p.sha256}`;
-  const copy = h('button', { class: 'ghost', type: 'button' }, 'Копировать команду');
-  copy.onclick = async () => {
-    try { await navigator.clipboard.writeText(cmd); copy.textContent = 'Скопировано'; }
-    catch { copy.textContent = 'Выделите и скопируйте вручную'; }
-    setTimeout(() => copy.textContent = 'Копировать команду', 2000);
-  };
-  const chips = p.capabilities.length
-    ? p.capabilities.map(c => h('span', { class: 'chip' }, c))
-    : [h('span', { class: 'chip ok' }, 'особых возможностей не найдено')];
-  return h('article', { class: 'item' },
-    h('div', { class: 'head' },
-      h('h2', {}, p.name),
-      h('span', { class: 'meta' }, `версия ${p.version}, автор ${p.author}, ${(p.size / 1024).toFixed(1)} КБ`)),
-    h('p', {}, p.description),
-    h('ul', { class: 'cmds' }, ...Object.entries(p.commands).map(([c, d]) => h('li', {}, h('code', {}, c), ` — ${d}`))),
-    h('div', { class: 'chips' }, ...chips),
-    h('code', { class: 'cmd' }, cmd),
-    h('div', { class: 'row' }, copy, h('a', { href: p.file, download: '' }, 'Скачать .py'),
-      h('span', { class: 'meta' }, `sha256 ${p.sha256.slice(0, 12)}…`)));
+function emptyState(title, message, retry) {
+  const box = el('div', {class:'state'}, el('strong', {}, title), el('span', {}, message));
+  if (retry) {
+    const button = el('button', {class:'btn', type:'button'}, 'Попробовать снова');
+    button.addEventListener('click', loadCatalog);
+    box.append(button);
+  }
+  list.replaceChildren(box);
 }
-
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' Б';
+  return (bytes / 1024).toFixed(1) + ' КБ';
+}
+function commandRow(name, description) {
+  return el('div', {class:'command'}, el('code', {}, name), el('span', {}, description));
+}
+function makeCard(p) {
+  const fileUrl = new URL(p.file, location.href).href;
+  const installCommand = 'plugin_install ' + fileUrl + ' ' + p.sha256;
+  const commands = Object.entries(p.commands || {});
+  const top = el('div', {class:'plugin-top'},
+    el('div', {class:'plugin-title'},
+      el('h3', {}, p.name || 'Без названия'),
+      el('span', {class:'version'}, 'Версия ' + (p.version || '1.0') + ' · ' + (p.author || 'Автор неизвестен'))
+    ),
+    el('span', {class:'pill safe'}, formatBytes(p.size || 0))
+  );
+  const meta = el('div', {class:'meta-row'},
+    el('span', {}, commands.length + (commands.length === 1 ? ' команда' : commands.length > 1 && commands.length < 5 ? ' команды' : ' команд')),
+    el('span', {}, 'SHA-256 проверен каталогом')
+  );
+  const commandList = el('div', {class:'command-list'});
+  commands.slice(0, 4).forEach(([name, desc]) => commandList.append(commandRow(name, desc)));
+  const commandsBlock = el('div', {class:'commands'},
+    el('div', {class:'commands-head'}, el('span', {}, 'КОМАНДЫ ПЛАГИНА'), el('span', {}, String(commands.length)))
+  );
+  commandsBlock.append(commandList);
+  if (commands.length > 4) {
+    const more = el('button', {class:'more-commands', type:'button'}, 'Показать ещё ' + (commands.length - 4));
+    more.setAttribute('aria-expanded', 'false');
+    more.addEventListener('click', () => {
+      const expanded = more.getAttribute('aria-expanded') === 'true';
+      if (expanded) {
+        commandList.replaceChildren(...commands.slice(0,4).map(([name, desc]) => commandRow(name, desc)));
+        more.textContent = 'Показать ещё ' + (commands.length - 4);
+      } else {
+        commandList.replaceChildren(...commands.map(([name, desc]) => commandRow(name, desc)));
+        more.textContent = 'Свернуть список';
+      }
+      more.setAttribute('aria-expanded', String(!expanded));
+    });
+    commandsBlock.append(more);
+  }
+  const capabilityNames = Array.isArray(p.capabilities) ? p.capabilities : [];
+  const capabilities = el('div', {class:'capabilities'});
+  if (capabilityNames.length) capabilityNames.forEach(name => capabilities.append(el('span', {class:'pill warn'}, name)));
+  else capabilities.append(el('span', {class:'pill safe'}, 'Особые возможности не обнаружены'));
+  const code = el('code', {class:'install-command'}, installCommand);
+  const copy = el('button', {class:'btn primary', type:'button'}, 'Копировать установку');
+  copy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(installCommand);
+      copy.textContent = 'Скопировано ✓';
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(code);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      copy.textContent = 'Команда выделена';
+    }
+    window.setTimeout(() => { copy.textContent = 'Копировать установку'; }, 1800);
+  });
+  const download = el('a', {class:'btn', href:fileUrl, download:p.name + '.py', target:'_blank', rel:'noopener noreferrer'}, 'Скачать .py ↗');
+  const hash = el('span', {class:'hash'}, 'SHA-256 ' + String(p.sha256 || '').slice(0,12) + '…');
+  return el('article', {class:'plugin'},
+    top,
+    el('p', {class:'description'}, p.description || 'Автор не добавил описание.'),
+    meta,
+    commandsBlock,
+    capabilities,
+    el('div', {class:'install'},
+      el('div', {class:'install-label'}, 'КОМАНДА УСТАНОВКИ'),
+      code,
+      el('div', {class:'card-actions'}, copy, download, hash)
+    )
+  );
+}
 function render() {
-  const s = q.value.trim().toLowerCase();
-  const hit = plugins.filter(p => !s || [p.name, p.description, ...Object.keys(p.commands)].join(' ').toLowerCase().includes(s));
-  list.replaceChildren(...(hit.length ? hit.map(card) : [h('div', { class: 'empty' }, plugins.length ? 'Ничего не найдено. Попробуйте другое слово.' : 'Каталог пуст. Добавьте первый плагин.')]));
+  const term = query.value.trim().toLocaleLowerCase('ru');
+  const filtered = plugins.filter(p => {
+    const commandText = Object.entries(p.commands || {}).flat().join(' ');
+    const capabilityText = (p.capabilities || []).join(' ');
+    return [p.name, p.description, p.author, p.version, commandText, capabilityText].join(' ').toLocaleLowerCase('ru').includes(term);
+  });
+  if (sort.value === 'commands') filtered.sort((a,b) => Object.keys(b.commands || {}).length - Object.keys(a.commands || {}).length);
+  else if (sort.value === 'size') filtered.sort((a,b) => (b.size || 0) - (a.size || 0));
+  else filtered.sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ru'));
+  resultsCount.textContent = 'Показано ' + filtered.length + ' из ' + plugins.length;
+  if (!filtered.length) {
+    emptyState(plugins.length ? 'Ничего не найдено' : 'Каталог пока пуст', plugins.length ? 'Попробуй другое название или команду.' : 'Когда появятся проверенные плагины, они отобразятся здесь.', false);
+    return;
+  }
+  list.replaceChildren(...filtered.map(makeCard));
 }
-
-q.addEventListener('input', render);
-fetch('index.json').then(r => r.json()).then(j => {
-  plugins = j.plugins;
-  document.getElementById('gen').textContent = `Обновлено ${new Date(j.generated).toLocaleDateString('ru-RU')}.`;
-  render();
-}).catch(() => list.replaceChildren(h('div', { class: 'empty' }, 'Не удалось загрузить каталог. Обновите страницу.')));
+async function loadCatalog() {
+  status.textContent = 'Загрузка каталога…';
+  emptyState('Загружаем каталог', 'Получаем список доступных расширений…', false);
+  try {
+    const response = await fetch('./index.json', {cache:'no-store'});
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+    if (!data || !Array.isArray(data.plugins)) throw new Error('Неверный формат index.json');
+    plugins = data.plugins;
+    document.getElementById('stat-plugins').textContent = plugins.length;
+    document.getElementById('stat-commands').textContent = plugins.reduce((sum,p) => sum + Object.keys(p.commands || {}).length, 0);
+    document.getElementById('stat-size').textContent = formatBytes(plugins.reduce((sum,p) => sum + (p.size || 0), 0));
+    status.textContent = plugins.length ? 'Каталог доступен' : 'Пока нет плагинов';
+    status.className = 'pill ' + (plugins.length ? 'safe' : '');
+    const date = data.generated ? new Date(data.generated) : null;
+    document.getElementById('updated').textContent = date && !Number.isNaN(date.getTime()) ? 'Обновлено: ' + date.toLocaleString('ru-RU') : 'Каталог загружен';
+    render();
+  } catch (error) {
+    status.textContent = 'Не удалось загрузить';
+    status.className = 'pill warn';
+    document.getElementById('updated').textContent = 'Ошибка загрузки каталога';
+    emptyState('Каталог недоступен', 'Не удалось загрузить index.json. Возможно, GitHub Actions ещё не завершил публикацию.', true);
+    console.error('PCRC plugin catalog:', error);
+  }
+}
+query.addEventListener('input', render);
+sort.addEventListener('change', render);
+loadCatalog();
 </script>
 </body>
 </html>
