@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Плагины PCRC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#edf0f3;--card:#fff;--ink:#16212b;--mute:#5b6875;--line:#cbd3db;--acc:#1f4fe0;--accink:#fff;--warn:#fbefd5;--warnink:#7a4a00;--code:#e4e9ee}
+@media (prefers-color-scheme:dark){:root{--bg:#12171c;--card:#1b222a;--ink:#e6ebf0;--mute:#93a0ad;--line:#2c3640;--acc:#7fa2ff;--accink:#0d1420;--warn:#3a2e12;--warnink:#f0c674;--code:#10151a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Onest,system-ui,sans-serif}
+main{max-width:860px;margin:0 auto;padding:48px 20px 80px}
+h1{font-size:2.4rem;line-height:1.1;margin:0 0 8px;letter-spacing:-.02em}
+.lead{color:var(--mute);margin:0 0 28px;max-width:60ch}
+.bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+input{flex:1 1 240px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
+a.btn,button{font:inherit;cursor:pointer;border-radius:8px;padding:12px 16px;border:1px solid var(--acc);background:var(--acc);color:var(--accink);text-decoration:none;font-weight:500}
+button.ghost{background:transparent;color:var(--acc);padding:8px 12px}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:12px}
+.head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.item h2{margin:0;font-size:1.25rem}
+.meta{color:var(--mute);font-size:.875rem}
+.item p{margin:8px 0 12px}
+.cmds{margin:0 0 12px;padding:0;list-style:none;font-size:.9rem;color:var(--mute)}
+.cmds code,.cmd{font-family:ui-monospace,Consolas,monospace}
+.cmds code{color:var(--ink)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{background:var(--warn);color:var(--warnink);border-radius:999px;padding:2px 10px;font-size:.8rem}
+.chip.ok{background:var(--code);color:var(--mute)}
+.cmd{display:block;background:var(--code);padding:10px 12px;border-radius:8px;font-size:.8rem;overflow-x:auto;white-space:nowrap;user-select:all}
+.row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.row a{color:var(--acc)}
+.empty{padding:40px 0;text-align:center;color:var(--mute)}
+footer{margin-top:32px;color:var(--mute);font-size:.875rem}
+@media (prefers-reduced-motion:no-preference){button{transition:background .15s}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Плагины PCRC</h1>
+  <p class="lead">Каталог плагинов для клиента PCRC. Скопируйте команду установки и отправьте её своему боту. Клиент сам проверит контрольную сумму.</p>
+  <div class="bar">
+    <input id="q" type="search" placeholder="Поиск по названию, описанию, команде" aria-label="Поиск плагинов">
+    <a class="btn" id="add" href="https://github.com/look-afk/pcrc-plugins/new/main/plugins" target="_blank" rel="noopener">Добавить плагин</a>
+  </div>
+  <div id="list" aria-live="polite"></div>
+  <footer>Плагин — это код, который выполняется на вашем компьютере. Устанавливайте только то, что прочитали или чему доверяете. <span id="gen"></span></footer>
+</main>
+<script>
+const list = document.getElementById('list'), q = document.getElementById('q');
+let plugins = [];
+
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);               // всё через textContent: описания пишут посторонние люди
+  for (const [k, v] of Object.entries(props || {})) k === 'class' ? el.className = v : el.setAttribute(k, v);
+  for (const kid of kids) el.append(kid);
+  return el;
+}
+
+function card(p) {
+  const url = new URL(p.file, location.href).href;
+  const cmd = `plugin_install ${url} ${p.sha256}`;
+  const copy = h('button', { class: 'ghost', type: 'button' }, 'Копировать команду');
+  copy.onclick = async () => {
+    try { await navigator.clipboard.writeText(cmd); copy.textContent = 'Скопировано'; }
+    catch { copy.textContent = 'Выделите и скопируйте вручную'; }
+    setTimeout(() => copy.textContent = 'Копировать команду', 2000);
+  };
+  const chips = p.capabilities.length
+    ? p.capabilities.map(c => h('span', { class: 'chip' }, c))
+    : [h('span', { class: 'chip ok' }, 'особых возможностей не найдено')];
+  return h('article', { class: 'item' },
+    h('div', { class: 'head' },
+      h('h2', {}, p.name),
+      h('span', { class: 'meta' }, `версия ${p.version}, автор ${p.author}, ${(p.size / 1024).toFixed(1)} КБ`)),
+    h('p', {}, p.description),
+    h('ul', { class: 'cmds' }, ...Object.entries(p.commands).map(([c, d]) => h('li', {}, h('code', {}, c), ` — ${d}`))),
+    h('div', { class: 'chips' }, ...chips),
+    h('code', { class: 'cmd' }, cmd),
+    h('div', { class: 'row' }, copy, h('a', { href: p.file, download: '' }, 'Скачать .py'),
+      h('span', { class: 'meta' }, `sha256 ${p.sha256.slice(0, 12)}…`)));
+}
+
+function render() {
+  const s = q.value.trim().toLowerCase();
+  const hit = plugins.filter(p => !s || [p.name, p.description, ...Object.keys(p.commands)].join(' ').toLowerCase().includes(s));
+  list.replaceChildren(...(hit.length ? hit.map(card) : [h('div', { class: 'empty' }, plugins.length ? 'Ничего не найдено. Попробуйте другое слово.' : 'Каталог пуст. Добавьте первый плагин.')]));
+}
+
+q.addEventListener('input', render);
+fetch('index.json').then(r => r.json()).then(j => {
+  plugins = j.plugins;
+  document.getElementById('gen').textContent = `Обновлено ${new Date(j.generated).toLocaleDateString('ru-RU')}.`;
+  render();
+}).catch(() => list.replaceChildren(h('div', { class: 'empty' }, 'Не удалось загрузить каталог. Обновите страницу.')));
+</script>
+</body>
+</html>

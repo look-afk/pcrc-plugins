@@ -1,0 +1,2 @@
+# Без этого CRLF на Windows меняет хэш файла и plugin_install падает с "sha256 mismatch"
+*.py text eol=lf
