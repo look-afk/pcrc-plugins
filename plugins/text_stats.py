@@ -13,7 +13,7 @@ class TextStatsPlugin(PluginBase):
         if not param:
             return "Передай текст после команды."
         words = param.split()
-        common = Counter(w.strip('.,!?;:()[]{}\"\'').lower() for w in words)
+        common = Counter(w.strip(".,!?;:()[]{}\\\"\'").lower() for w in words)
         common = [(word, count) for word, count in common.most_common(5) if word]
         top = ", ".join(f"{word} ({count})" for word, count in common) or "нет"
         return (
