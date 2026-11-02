@@ -45,7 +45,7 @@ h1 em{font-style:normal;color:var(--purple)}
 .card:hover{border-color:#52525b}
 .body{display:block;padding:20px;flex:1}
 .head{display:flex;align-items:center;gap:14px;min-width:0}
-.ico{flex:none;width:50px;height:50px;border-radius:12px;display:grid;place-items:center;font-size:22px;font-weight:700}
+.ico{flex:none;width:50px;height:50px;border-radius:12px;display:grid;place-items:center;font-size:22px;font-weight:700;letter-spacing:-.04em;font-family:system-ui,'Segoe UI Emoji',sans-serif}
 .tt{display:block;min-width:0}
 .tt strong,.tt h2{display:block;margin:0;font-size:17px;font-weight:600;overflow-wrap:anywhere}
 .tt code{display:block;font-size:13px;color:var(--mu);overflow-wrap:anywhere}
@@ -133,12 +133,32 @@ const kb = n => (n / 1024).toFixed(1) + ' КБ';
 const title = p => p.name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const slug = p => (p.author && p.author !== '—' ? p.author : 'community') + '/' + p.name;
 
+const pluginIcons = {
+  color_converter: ['🎨', '#3b245e', '#d8b4fe'],
+  command_studio: ['⌘', '#202b50', '#a5b4fc'],
+  csv_json: ['▤', '#163b31', '#6ee7b7'],
+  event_bus: ['⚡', '#493716', '#fcd34d'],
+  hash_tool: ['#', '#26364b', '#93c5fd'],
+  json_formatter: ['{ }', '#173b46', '#67e8f9'],
+  password_generator: ['🔐', '#45213b', '#f0abfc'],
+  pc_benchmark: ['📊', '#173d2d', '#86efac'],
+  plugin_developer_kit: ['🧰', '#3e2b1a', '#fdba74'],
+  plugin_sandbox: ['🛡', '#3c2530', '#fda4af'],
+  smart_scheduler: ['🗓', '#1d3152', '#93c5fd'],
+  text_stats: ['¶', '#3d2b52', '#d8b4fe'],
+  text_transform: ['Aa', '#24413e', '#99f6e4'],
+  time_tool: ['◷', '#3d3420', '#fde68a'],
+  url_codec: ['↗', '#1c3c4a', '#7dd3fc'],
+  uuid_generator: ['🧬', '#3c2a4c', '#e9d5ff'],
+  workflow_builder: ['⤴', '#263b2d', '#bbf7d0']
+};
+
 function icon(p) {
-  let hue = 0;
-  for (const c of p.name) hue = (hue * 31 + c.charCodeAt(0)) % 360;
-  const e = h('span', { class: 'ico', 'aria-hidden': 'true' }, p.name.charAt(0).toUpperCase());
-  e.style.background = `hsl(${hue} 55% 20%)`;
-  e.style.color = `hsl(${hue} 90% 72%)`;
+  const [symbol, background, foreground] = pluginIcons[p.name] || ['✦', '#29243f', '#c4b5fd'];
+  const e = h('span', { class: 'ico', 'aria-hidden': 'true' }, symbol);
+  e.style.background = background;
+  e.style.color = foreground;
+  e.setAttribute('title', title(p));
   return e;
 }
 
