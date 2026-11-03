@@ -1,26 +1,38 @@
 """Small local event journal for plugins; no remote telemetry."""
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from plugins._base import PluginBase
 
-DATA = Path(__file__).resolve().parent / "event_bus_events.json"
 MAX_EVENTS = 200
+
+
+def _data() -> Path:
+    # Данные лежат вне папки плагинов: она может быть недоступна для записи, а delete не должен их терять.
+    root = Path(os.environ.get("APPDATA") or Path.home() / ".local" / "share") / "PCRC" / "plugin_data"
+    root.mkdir(parents=True, exist_ok=True)
+    return root / "event_bus_events.json"
+
 
 def _read():
     try:
-        obj = json.loads(DATA.read_text(encoding="utf-8"))
+        obj = json.loads(_data().read_text(encoding="utf-8"))
         return obj if isinstance(obj, list) else []
     except (OSError, ValueError):
         return []
 
+
 def _write(events):
-    DATA.write_text(json.dumps(events[-MAX_EVENTS:], ensure_ascii=False, indent=2), encoding="utf-8")
+    p = _data(); tmp = p.with_suffix(".tmp")
+    tmp.write_text(json.dumps(events[-MAX_EVENTS:], ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(tmp, p)   # атомарно: обрыв посреди записи не портит файл
+
 
 class EventBusPlugin(PluginBase):
     NAME = "event_bus"
-    VERSION = "1.0"
-    DESCRIPTION = "Локальный журнал событий и простая шина событий для отладки интеграций плагинов."
+    VERSION = "1.1"
+    DESCRIPTION = "Локальный журнал событий: ручная запись, просмотр и сводка по типам. Автоматической подписки между плагинами нет."
     AUTHOR = "look-afk"
     COMMANDS = {
         "event_help": "Справка Event Bus",

@@ -1,25 +1,35 @@
 """Create, inspect and export reusable PCRC workflows without duplicating core commands."""
 import json
+import os
 import re
 from pathlib import Path
 from plugins._base import PluginBase
 
-DATA = Path(__file__).resolve().parent / "workflow_builder_data.json"
-NAME = "workflow_builder"
+
+def _data() -> Path:
+    # Данные лежат вне папки плагинов: она может быть недоступна для записи, а delete не должен их терять.
+    root = Path(os.environ.get("APPDATA") or Path.home() / ".local" / "share") / "PCRC" / "plugin_data"
+    root.mkdir(parents=True, exist_ok=True)
+    return root / "workflow_builder_data.json"
+
 
 def _load():
     try:
-        obj = json.loads(DATA.read_text(encoding="utf-8"))
+        obj = json.loads(_data().read_text(encoding="utf-8"))
         return obj if isinstance(obj, dict) else {}
     except (OSError, ValueError):
         return {}
 
+
 def _save(obj):
-    DATA.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+    p = _data(); tmp = p.with_suffix(".tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(tmp, p)   # атомарно: обрыв посреди записи не портит файл
+
 
 class WorkflowBuilderPlugin(PluginBase):
     NAME = "workflow_builder"
-    VERSION = "1.0"
+    VERSION = "1.1"
     DESCRIPTION = "Конструктор повторяемых сценариев: хранит шаги и экспортирует план, не исполняя команды скрытно."
     AUTHOR = "look-afk"
     COMMANDS = {

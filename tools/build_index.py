@@ -8,13 +8,23 @@ SRC, OUT = ROOT / "plugins", ROOT / "site"
 MAX_SIZE = 200 * 1024
 
 # Что плагин умеет — по импортам. Это подсказка для читателя, а не защита.
+# Ключи — полные имена модулей: urllib.parse (кодирование строк) сети не касается, urllib.request — касается.
 IMPORT_FLAGS = {
     "subprocess": "запускает программы", "ctypes": "низкоуровневый доступ",
     "winreg": "реестр Windows", "socket": "сеть", "requests": "интернет",
-    "urllib": "интернет", "aiohttp": "интернет", "http": "интернет",
-    "shutil": "файлы", "pyautogui": "управляет мышью и клавиатурой",
+    "urllib.request": "интернет", "urllib3": "интернет", "http.client": "интернет",
+    "aiohttp": "интернет", "shutil": "файлы", "pyautogui": "управляет мышью и клавиатурой",
+    "pickle": "небезопасная десериализация",
 }
 CALL_FLAGS = {"eval": "динамический код", "exec": "динамический код", "__import__": "динамический код"}
+
+
+def load_core() -> set:
+    f = Path(__file__).with_name("core_commands.txt")
+    if not f.exists():
+        print("! tools/core_commands.txt не найден — проверка пересечений со встроенными командами пропущена")
+        return set()
+    return {l.strip() for l in f.read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")}
 
 
 def lit(node):
@@ -24,7 +34,17 @@ def lit(node):
         return None
 
 
-def parse(path: Path, raw: bytes):
+def import_flags(n) -> set:
+    mods = []
+    if isinstance(n, ast.Import):
+        mods = [a.name for a in n.names]
+    elif isinstance(n, ast.ImportFrom):
+        base = n.module or ""
+        mods = [base] + [f"{base}.{a.name}" for a in n.names]   # from urllib import request
+    return {v for m in mods for k, v in IMPORT_FLAGS.items() if m == k or m.startswith(k + ".")}
+
+
+def parse(path: Path, raw: bytes, core: set):
     errs, text = [], raw.decode("utf-8")
     tree = ast.parse(text)
     cls = next((n for n in tree.body if isinstance(n, ast.ClassDef) and any(
@@ -52,14 +72,14 @@ def parse(path: Path, raw: bytes):
     cmds = attrs.get("COMMANDS")
     if not isinstance(cmds, dict) or not cmds:
         errs.append("COMMANDS должен быть непустым словарём-литералом")
+    else:
+        for c in cmds:
+            if c in core:
+                errs.append(f"команда '{c}' совпадает со встроенной командой клиента")
 
     flags = set()
     for n in ast.walk(tree):
-        mods = [a.name for a in n.names] if isinstance(n, ast.Import) else \
-               [n.module or ""] if isinstance(n, ast.ImportFrom) else []
-        for m in mods:
-            if m.split(".")[0] in IMPORT_FLAGS:
-                flags.add(IMPORT_FLAGS[m.split(".")[0]])
+        flags |= import_flags(n)
         if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in CALL_FLAGS:
             flags.add(CALL_FLAGS[n.func.id])
         if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in ("system", "popen"):
@@ -78,10 +98,13 @@ def parse(path: Path, raw: bytes):
 
 
 def main():
+    core = load_core()
     shutil.rmtree(OUT / "plugins", ignore_errors=True)
     (OUT / "plugins").mkdir(parents=True)
     plugins, failed, seen_cmds = [], False, {}
     for path in sorted(SRC.glob("*.py")):
+        if path.stem.startswith("_"):
+            continue
         raw = path.read_bytes()
         try:
             if len(raw) > MAX_SIZE:
@@ -89,7 +112,7 @@ def main():
             elif b"\r\n" in raw:
                 info, errs = None, ["переводы строк CRLF — сохраните файл с LF"]
             else:
-                info, errs = parse(path, raw)
+                info, errs = parse(path, raw, core)
         except (SyntaxError, UnicodeDecodeError) as e:
             info, errs = None, [f"не удалось разобрать файл: {e}"]
         for c in (info or {}).get("commands", {}):
