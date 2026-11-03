@@ -1,24 +1,35 @@
 """Persistent reminder scheduler. It records reminders; it does not run OS commands."""
 import json
+import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from plugins._base import PluginBase
 
-DATA=Path(__file__).resolve().parent/"smart_scheduler_tasks.json"
+
+def _data() -> Path:
+    # Данные лежат вне папки плагинов: она может быть недоступна для записи, а delete не должен их терять.
+    root = Path(os.environ.get("APPDATA") or Path.home() / ".local" / "share") / "PCRC" / "plugin_data"
+    root.mkdir(parents=True, exist_ok=True)
+    return root / "smart_scheduler_tasks.json"
+
 
 def _read():
     try:
-        d=json.loads(DATA.read_text(encoding="utf-8"))
-        return d if isinstance(d,list) else []
-    except (OSError,ValueError): return []
+        d = json.loads(_data().read_text(encoding="utf-8"))
+        return d if isinstance(d, list) else []
+    except (OSError, ValueError): return []
+
 
 def _save(d):
-    DATA.write_text(json.dumps(d,ensure_ascii=False,indent=2),encoding="utf-8")
+    p = _data(); tmp = p.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(tmp, p)   # атомарно: обрыв посреди записи не портит файл
+
 
 class SmartSchedulerPlugin(PluginBase):
     NAME = "smart_scheduler"
-    VERSION = "1.0"
+    VERSION = "1.1"
     DESCRIPTION = "Список задач с датой/временем и статусом; не запускает системные команды и не гарантирует фоновые уведомления."
     AUTHOR = "look-afk"
     COMMANDS = {
