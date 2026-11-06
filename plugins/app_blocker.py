@@ -5,6 +5,10 @@ added by the user. It uses psutil directly: no shell, subprocess, registry hooks
 startup persistence, or console windows.
 """
 import asyncio
+import hashlib
+import hmac
+import secrets
+import threading
 import getpass
 import json
 import os
@@ -60,11 +64,11 @@ def _save_config(data: dict) -> None:
 
 class AppBlockerPlugin(PluginBase):
     NAME = "app_blocker"
-    VERSION = "1.0"
+    VERSION = "1.1"
     DESCRIPTION = (
-        "Windows: blocks selected applications by closing matching processes. "
-        "Exact .exe names only; no terminal windows, shell commands, registry hooks, "
-        "or automatic startup. Enable and disable it explicitly."
+        "Windows app blocklist plus an optional local fullscreen password screen. "
+        "The password is set locally; the overlay has an emergency exit and does "
+        "not disable Windows recovery or system controls."
     )
     AUTHOR = "look-afk"
     COMMANDS = {
@@ -75,6 +79,9 @@ class AppBlockerPlugin(PluginBase):
         "ab_enable": "Включить блокировку приложений",
         "ab_disable": "Выключить блокировку приложений",
         "ab_status": "Показать состояние App Blocker",
+        "ab_set_password": "Локально задать пароль для System Guard",
+        "ab_system": "Открыть полноэкранную блокировку PCRC",
+        "ab_system_off": "Закрыть окно System Guard",
     }
 
     def __init__(self):
@@ -88,6 +95,7 @@ class AppBlockerPlugin(PluginBase):
 
     async def on_unload(self) -> None:
         self._stop_monitor()
+        _GUARD_CLOSE.set()
 
     def _start_monitor(self) -> None:
         if os.name != "nt" or (self._monitor_task and not self._monitor_task.done()):
@@ -138,19 +146,21 @@ class AppBlockerPlugin(PluginBase):
         if cmd == "ab_help":
             return (
                 "APP BLOCKER (Windows)\n"
-                "ab_add notepad.exe  — добавить приложение\n"
+                "ab_add notepad.exe — добавить приложение\n"
                 "ab_remove notepad.exe — убрать приложение\n"
                 "ab_list — список\n"
-                "ab_enable — включить\n"
-                "ab_disable — выключить\n"
+                "ab_enable / ab_disable — включить / выключить список\n"
                 "ab_status — состояние\n\n"
-                "Указывай точное имя .exe из Диспетчера задач. "
-                "Плагин закрывает только совпадающие приложения текущего пользователя. "
-                "Он не запускает терминал и не меняет системные настройки."
+                "SYSTEM GUARD\n"
+                "ab_set_password — открыть локальное окно настройки пароля\n"
+                "ab_system — открыть полноэкранное окно с паролем\n"
+                "ab_system_off — закрыть окно\n"
+                "Аварийный выход: Ctrl+Shift+F12.\n"
+                "Пароль вводится только на этом ПК и не отправляется в Telegram."
             )
 
         if os.name != "nt":
-            return "App Blocker поддерживается только на Windows."
+            return "App Blocker и System Guard поддерживаются только на Windows."
 
         if cmd == "ab_add":
             name = arg if arg.lower().endswith(".exe") else arg + ".exe"
@@ -176,9 +186,7 @@ class AppBlockerPlugin(PluginBase):
         if cmd == "ab_list":
             if not config["blocked"]:
                 return "Список пуст. Добавь приложение: ab_add notepad.exe"
-            return "APP BLOCKER LIST\n" + "\n".join(
-                f"• {name}" for name in config["blocked"]
-            )
+            return "APP BLOCKER LIST\n" + "\n".join(f"• {name}" for name in config["blocked"])
 
         if cmd == "ab_enable":
             if not config["blocked"]:
@@ -186,7 +194,7 @@ class AppBlockerPlugin(PluginBase):
             config["enabled"] = True
             _save_config(config)
             self._start_monitor()
-            return "App Blocker включён. Будут закрываться только приложения из списка для текущего пользователя."
+            return "App Blocker включён."
 
         if cmd == "ab_disable":
             config["enabled"] = False
@@ -199,7 +207,202 @@ class AppBlockerPlugin(PluginBase):
             return (
                 f"App Blocker: {'ВКЛЮЧЁН' if active else 'ВЫКЛЮЧЕН'}\n"
                 f"Приложений в списке: {len(config['blocked'])}\n"
-                "Платформа: Windows"
+                f"System Guard: {'ОТКРЫТ' if _GUARD_THREAD and _GUARD_THREAD.is_alive() else 'ЗАКРЫТ'}\n"
+                f"Пароль задан: {'ДА' if config.get('guard_hash') and config.get('guard_salt') else 'НЕТ'}"
             )
 
+        if cmd == "ab_set_password":
+            _launch_guard(setup=True)
+            return "Открыто локальное окно настройки. Задай и подтверди пароль непосредственно на компьютере."
+
+        if cmd == "ab_system":
+            if not (config.get("guard_hash") and config.get("guard_salt")):
+                return "Сначала задай пароль локально: ab_set_password"
+            if _launch_guard(setup=False):
+                return "System Guard открыт на компьютере. Аварийный выход: Ctrl+Shift+F12."
+            return "System Guard уже открыт."
+
+        if cmd == "ab_system_off":
+            _GUARD_CLOSE.set()
+            return "Запрос на закрытие System Guard отправлен."
+
         return "Неизвестная команда. Используй ab_help."
+
+
+_GUARD_CLOSE = threading.Event()
+_GUARD_LOCK = threading.Lock()
+_GUARD_THREAD = None
+
+
+def _password_matches(password: str, config: dict) -> bool:
+    salt_hex = config.get("guard_salt")
+    expected = config.get("guard_hash")
+    if not isinstance(salt_hex, str) or not isinstance(expected, str):
+        return False
+    try:
+        actual = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), bytes.fromhex(salt_hex), 310_000
+        ).hex()
+    except (ValueError, UnicodeError):
+        return False
+    return hmac.compare_digest(actual, expected)
+
+
+def _launch_guard(setup: bool = False) -> bool:
+    global _GUARD_THREAD
+    with _GUARD_LOCK:
+        if _GUARD_THREAD and _GUARD_THREAD.is_alive():
+            return False
+        _GUARD_CLOSE.clear()
+        _GUARD_THREAD = threading.Thread(
+            target=_guard_window, args=(setup,), name="PCRC-SystemGuard", daemon=True
+        )
+        _GUARD_THREAD.start()
+        return True
+
+
+def _guard_window(setup: bool) -> None:
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+    except Exception:
+        return
+
+    root = None
+    try:
+        root = tk.Tk()
+        root.title("PCRC System Guard")
+        root.configure(bg="#09090f")
+        root.attributes("-fullscreen", True)
+        root.attributes("-topmost", True)
+        root.protocol("WM_DELETE_WINDOW", lambda: None)
+
+        panel = tk.Frame(root, bg="#151522", padx=42, pady=34)
+        panel.place(relx=0.5, rely=0.5, anchor="center")
+
+        title = tk.Label(
+            panel, text="PCRC SYSTEM GUARD", fg="#c4b5fd",
+            bg="#151522", font=("Segoe UI", 22, "bold")
+        )
+        title.pack(pady=(0, 10))
+
+        hint = tk.Label(
+            panel, text="Доступ к рабочему экрану временно ограничен",
+            fg="#d4d4dc", bg="#151522", font=("Segoe UI", 11)
+        )
+        hint.pack(pady=(0, 22))
+
+        entry = tk.Entry(
+            panel, show="•", width=30, font=("Segoe UI", 16),
+            justify="center", relief="flat"
+        )
+        entry.pack(ipady=9, pady=(0, 12))
+        status = tk.Label(panel, text="", fg="#fca5a5", bg="#151522", font=("Segoe UI", 10))
+        status.pack(pady=(0, 10))
+
+        def exit_guard():
+            _GUARD_CLOSE.set()
+
+        def verify(_event=None):
+            cfg = _read_config()
+            if _password_matches(entry.get(), cfg):
+                _GUARD_CLOSE.set()
+            else:
+                entry.delete(0, "end")
+                status.config(text="Неверный пароль")
+                entry.focus_set()
+
+        def emergency(_event=None):
+            if messagebox.askyesno(
+                "Аварийный выход",
+                "Закрыть окно PCRC System Guard? Это не изменит пароль и настройки Windows.",
+                parent=root,
+            ):
+                exit_guard()
+
+        if setup:
+            title.config(text="НАСТРОЙКА SYSTEM GUARD")
+            hint.config(text="Пароль задаётся локально и хранится в виде PBKDF2-хеша")
+            confirm = tk.Entry(
+                panel, show="•", width=30, font=("Segoe UI", 16),
+                justify="center", relief="flat"
+            )
+            confirm.pack(ipady=9, pady=(0, 12))
+            confirm.insert(0, "")
+            confirm_hint = tk.Label(
+                panel, text="Повтори пароль", fg="#a1a1aa",
+                bg="#151522", font=("Segoe UI", 10)
+            )
+            confirm_hint.pack()
+            confirm.pack_forget()
+            confirm_hint.pack_forget()
+
+            def show_setup():
+                entry.pack(ipady=9, pady=(0, 12))
+                confirm_hint.pack()
+                confirm.pack(ipady=9, pady=(0, 12))
+                status.pack(pady=(0, 10))
+                button.config(text="Сохранить пароль", command=save_password)
+                hint.config(text="Минимум 8 символов. Вводи пароль только на этом ПК.")
+
+            def save_password():
+                first, second = entry.get(), confirm.get()
+                if len(first) < 8:
+                    status.config(text="Минимальная длина — 8 символов")
+                    return
+                if first != second:
+                    status.config(text="Пароли не совпадают")
+                    return
+                salt = secrets.token_bytes(16)
+                digest = hashlib.pbkdf2_hmac("sha256", first.encode("utf-8"), salt, 310_000).hex()
+                cfg = _read_config()
+                cfg["guard_salt"] = salt.hex()
+                cfg["guard_hash"] = digest
+                _save_config(cfg)
+                messagebox.showinfo("PCRC", "Пароль сохранён локально.", parent=root)
+                _GUARD_CLOSE.set()
+
+            show_setup()
+        else:
+            button = None
+            entry.bind("<Return>", verify)
+            entry.focus_set()
+
+        if not setup:
+            button = tk.Button(
+                panel, text="Разблокировать", command=verify,
+                bg="#8b5cf6", fg="white", activebackground="#7c3aed",
+                relief="flat", padx=22, pady=10, font=("Segoe UI", 11, "bold")
+            )
+            button.pack(pady=(0, 12))
+        else:
+            button = tk.Button(
+                panel, text="Сохранить пароль", command=save_password,
+                bg="#8b5cf6", fg="white", activebackground="#7c3aed",
+                relief="flat", padx=22, pady=10, font=("Segoe UI", 11, "bold")
+            )
+            button.pack(pady=(0, 12))
+
+        foot = tk.Label(
+            panel, text="Аварийный выход: Ctrl + Shift + F12",
+            fg="#a1a1aa", bg="#151522", font=("Segoe UI", 9)
+        )
+        foot.pack()
+
+        root.bind_all("<Control-Shift-F12>", emergency)
+        root.bind_all("<Escape>", lambda _e: "break")
+
+        def poll_close():
+            if _GUARD_CLOSE.is_set():
+                root.destroy()
+                return
+            root.after(150, poll_close)
+
+        root.after(150, poll_close)
+        root.mainloop()
+    except Exception:
+        if root is not None:
+            try:
+                root.destroy()
+            except Exception:
+                pass
