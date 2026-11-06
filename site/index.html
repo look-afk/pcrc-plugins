@@ -133,7 +133,8 @@ const kb = n => (n / 1024).toFixed(1) + ' КБ';
 const title = p => p.name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const slug = p => (p.author && p.author !== '—' ? p.author : 'community') + '/' + p.name;
 
-const pluginIcons = {\n  app_blocker: [['rect',{x:4,y:4,width:16,height:16,rx:3}],['path',{d:'M9 9h6v6H9zM8 2v2M16 2v2M8 20v2M16 20v2'}]],
+const pluginIcons = {
+  app_blocker: [['rect',{x:4,y:4,width:16,height:16,rx:3}],['path',{d:'M9 9h6v6H9zM8 2v2M16 2v2M8 20v2M16 20v2'}]],
   color_converter: [['circle',{cx:12,cy:12,r:8}],['path',{d:'M12 4v16M4 12h16'}],['circle',{cx:12,cy:12,r:3}]],
   command_studio: [['path',{d:'m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14'}]],
   csv_json: [['rect',{x:4,y:4,width:16,height:16,rx:2}],['path',{d:'M8 8h8M8 12h8M8 16h5'}]],
