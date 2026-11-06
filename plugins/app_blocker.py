@@ -49,7 +49,12 @@ def _read_config() -> dict:
         if isinstance(name, str) and _NAME_RE.fullmatch(name)
         and name.casefold() not in _PROTECTED
     })
-    return {"enabled": data.get("enabled") is True, "blocked": clean}
+    result = {"enabled": data.get("enabled") is True, "blocked": clean}
+    for key in ("guard_hash", "guard_salt"):
+        value = data.get(key)
+        if isinstance(value, str):
+            result[key] = value
+    return result
 
 
 def _save_config(data: dict) -> None:
