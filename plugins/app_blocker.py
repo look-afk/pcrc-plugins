@@ -81,7 +81,6 @@ class AppBlockerPlugin(PluginBase):
         "ab_status": "Показать состояние App Blocker",
         "ab_set_password": "Локально задать пароль для System Guard",
         "ab_system": "Открыть полноэкранную блокировку PCRC",
-        "ab_system_off": "Закрыть окно System Guard",
     }
 
     def __init__(self):
@@ -154,7 +153,6 @@ class AppBlockerPlugin(PluginBase):
                 "SYSTEM GUARD\n"
                 "ab_set_password — открыть локальное окно настройки пароля\n"
                 "ab_system — открыть полноэкранное окно с паролем\n"
-                "ab_system_off — закрыть окно\n"
                 "Аварийный выход: Ctrl+Shift+F12.\n"
                 "Пароль вводится только на этом ПК и не отправляется в Telegram."
             )
@@ -221,10 +219,6 @@ class AppBlockerPlugin(PluginBase):
             if _launch_guard(setup=False):
                 return "System Guard открыт на компьютере. Аварийный выход: Ctrl+Shift+F12."
             return "System Guard уже открыт."
-
-        if cmd == "ab_system_off":
-            _GUARD_CLOSE.set()
-            return "Запрос на закрытие System Guard отправлен."
 
         return "Неизвестная команда. Используй ab_help."
 
