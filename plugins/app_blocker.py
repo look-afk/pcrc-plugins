@@ -362,7 +362,6 @@ def _guard_window(setup: bool) -> None:
                 messagebox.showinfo("PCRC", "Пароль сохранён локально.", parent=root)
                 _GUARD_CLOSE.set()
 
-            show_setup()
         else:
             button = None
             entry.bind("<Return>", verify)
@@ -382,6 +381,8 @@ def _guard_window(setup: bool) -> None:
                 relief="flat", padx=22, pady=10, font=("Segoe UI", 11, "bold")
             )
             button.pack(pady=(0, 12))
+            if setup:
+                show_setup()
 
         foot = tk.Label(
             panel, text="Аварийный выход: Ctrl + Shift + F12",
