@@ -67,7 +67,7 @@ class AppBlockerPlugin(PluginBase):
     VERSION = "1.1"
     DESCRIPTION = (
         "Windows app blocklist plus an optional local fullscreen password screen. "
-        "The password is set locally; the overlay has an emergency exit and does "
+        "The password can be set by an authorized administrator; the overlay has an emergency exit and does "
         "not disable Windows recovery or system controls."
     )
     AUTHOR = "look-afk"
@@ -79,7 +79,7 @@ class AppBlockerPlugin(PluginBase):
         "ab_enable": "Включить блокировку приложений",
         "ab_disable": "Выключить блокировку приложений",
         "ab_status": "Показать состояние App Blocker",
-        "ab_set_password": "Локально задать пароль для System Guard",
+        "ab_set_password": "Удалённо задать пароль System Guard (администратор)",
         "ab_system": "Открыть полноэкранную блокировку PCRC",
     }
 
@@ -154,7 +154,7 @@ class AppBlockerPlugin(PluginBase):
                 "ab_set_password — открыть локальное окно настройки пароля\n"
                 "ab_system — открыть полноэкранное окно с паролем\n"
                 "Аварийный выход: Ctrl+Shift+F12.\n"
-                "Пароль вводится только на этом ПК и не отправляется в Telegram."
+                "Пароль передаётся администратором через Telegram и хранится на ПК только в виде PBKDF2-хеша."
             )
 
         if os.name != "nt":
@@ -210,8 +210,16 @@ class AppBlockerPlugin(PluginBase):
             )
 
         if cmd == "ab_set_password":
-            _launch_guard(setup=True)
-            return "Открыто локальное окно настройки. Задай и подтверди пароль непосредственно на компьютере."
+            if len(arg) < 8:
+                return "Укажи пароль длиной минимум 8 символов: ab_set_password <пароль>"
+            if len(arg) > 256:
+                return "Пароль слишком длинный (максимум 256 символов)."
+            salt = secrets.token_bytes(16)
+            digest = hashlib.pbkdf2_hmac("sha256", arg.encode("utf-8"), salt, 310_000).hex()
+            config["guard_salt"] = salt.hex()
+            config["guard_hash"] = digest
+            _save_config(config)
+            return "Пароль System Guard установлен. Сохранён только PBKDF2-хеш; окно настройки не открывалось."
 
         if cmd == "ab_system":
             if not (config.get("guard_hash") and config.get("guard_salt")):
